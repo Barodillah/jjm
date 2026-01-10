@@ -23,7 +23,7 @@ body {
 }
 
 /* Sticky header respects safe area */
-header.sticky {
+.sticky {
   top: env(safe-area-inset-top, 0);
 }
 
@@ -33,7 +33,7 @@ header.sticky {
     padding-top: env(safe-area-inset-top);
   }
 
-  header.sticky {
+  .sticky {
     top: 0;
   }
 }
