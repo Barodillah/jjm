@@ -152,31 +152,42 @@ export default function PinLogin({ onSuccess }) {
     }, [display, previousValue, operator, waitingForOperand, isLoading]);
 
     return createPortal(
-        <div className="fixed inset-0 z-[99999] bg-gray-100 flex items-center justify-center p-4">
-            <div className={`bg-white rounded-[32px] shadow-2xl w-full max-w-[280px] p-5 transition-transform ${shake ? 'animate-shake' : ''}`}>
-
+        <div className="fixed inset-0 z-[99999] bg-gray-100 flex items-center justify-center p-4 pt-safe-area pb-safe-area">
+            {/* Calculator Card - Responsive sizing for Safari/iOS */}
+            <div
+                className={`bg-white rounded-[32px] shadow-2xl w-full p-6 transition-transform ${shake ? 'animate-shake' : ''}`}
+                style={{
+                    maxWidth: 'min(340px, calc(100vw - 32px))',
+                    minWidth: '280px',
+                }}
+            >
                 {/* Display */}
-                <div className="text-right mb-6 min-h-[60px] flex items-end justify-end">
+                <div className="text-right mb-8 min-h-[72px] flex items-end justify-end px-2">
                     <span
-                        className="text-5xl font-light text-gray-700 truncate"
-                        style={{ fontSize: display.length > 8 ? '2rem' : display.length > 6 ? '2.5rem' : '3rem' }}
+                        className="font-light text-gray-700 truncate"
+                        style={{
+                            fontSize: display.length > 10 ? 'clamp(1.5rem, 8vw, 2rem)'
+                                : display.length > 7 ? 'clamp(2rem, 10vw, 2.5rem)'
+                                    : 'clamp(2.5rem, 12vw, 3.5rem)'
+                        }}
                     >
                         {isLoading ? '...' : display}
                     </span>
                 </div>
 
                 {/* Calculator Buttons */}
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-4 gap-2 sm:gap-3">
                     {/* Row 1: Operators */}
                     {['+', '-', '×', '÷'].map((op) => (
                         <button
                             key={op}
                             onClick={() => handleOperator(op)}
                             disabled={isLoading}
-                            className={`h-14 rounded-full text-xl font-medium transition-all active:scale-95 ${operator === op && waitingForOperand
+                            className={`aspect-square rounded-full text-lg sm:text-xl font-medium transition-all active:scale-95 touch-manipulation ${operator === op && waitingForOperand
                                     ? 'bg-gray-400 text-white'
-                                    : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                                    : 'bg-gray-200 text-gray-600 hover:bg-gray-300 active:bg-gray-300'
                                 }`}
+                            style={{ minHeight: '52px' }}
                         >
                             {op}
                         </button>
@@ -188,7 +199,8 @@ export default function PinLogin({ onSuccess }) {
                             key={num}
                             onClick={() => handleNumber(num)}
                             disabled={isLoading}
-                            className="h-14 rounded-full bg-gray-200 text-gray-700 text-xl font-medium hover:bg-gray-300 transition-all active:scale-95"
+                            className="aspect-square rounded-full bg-gray-200 text-gray-700 text-lg sm:text-xl font-medium hover:bg-gray-300 active:bg-gray-300 transition-all active:scale-95 touch-manipulation"
+                            style={{ minHeight: '52px' }}
                         >
                             {num}
                         </button>
@@ -198,7 +210,8 @@ export default function PinLogin({ onSuccess }) {
                     <button
                         onClick={handleEquals}
                         disabled={isLoading}
-                        className="row-span-4 rounded-full bg-[#FF6B6B] hover:bg-[#ff5252] text-white text-3xl font-medium transition-all active:scale-95 disabled:opacity-70 flex items-center justify-center shadow-lg"
+                        className="row-span-4 rounded-full bg-[#FF6B6B] hover:bg-[#ff5252] active:bg-[#ff5252] text-white text-2xl sm:text-3xl font-medium transition-all active:scale-95 disabled:opacity-70 flex items-center justify-center shadow-lg touch-manipulation"
+                        style={{ minHeight: '52px' }}
                     >
                         {isLoading ? (
                             <span className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
@@ -213,7 +226,8 @@ export default function PinLogin({ onSuccess }) {
                             key={num}
                             onClick={() => handleNumber(num)}
                             disabled={isLoading}
-                            className="h-14 rounded-full bg-gray-200 text-gray-700 text-xl font-medium hover:bg-gray-300 transition-all active:scale-95"
+                            className="aspect-square rounded-full bg-gray-200 text-gray-700 text-lg sm:text-xl font-medium hover:bg-gray-300 active:bg-gray-300 transition-all active:scale-95 touch-manipulation"
+                            style={{ minHeight: '52px' }}
                         >
                             {num}
                         </button>
@@ -225,7 +239,8 @@ export default function PinLogin({ onSuccess }) {
                             key={num}
                             onClick={() => handleNumber(num)}
                             disabled={isLoading}
-                            className="h-14 rounded-full bg-gray-200 text-gray-700 text-xl font-medium hover:bg-gray-300 transition-all active:scale-95"
+                            className="aspect-square rounded-full bg-gray-200 text-gray-700 text-lg sm:text-xl font-medium hover:bg-gray-300 active:bg-gray-300 transition-all active:scale-95 touch-manipulation"
+                            style={{ minHeight: '52px' }}
                         >
                             {num}
                         </button>
@@ -235,21 +250,24 @@ export default function PinLogin({ onSuccess }) {
                     <button
                         onClick={() => handleNumber('0')}
                         disabled={isLoading}
-                        className="h-14 rounded-full bg-gray-200 text-gray-700 text-xl font-medium hover:bg-gray-300 transition-all active:scale-95"
+                        className="aspect-square rounded-full bg-gray-200 text-gray-700 text-lg sm:text-xl font-medium hover:bg-gray-300 active:bg-gray-300 transition-all active:scale-95 touch-manipulation"
+                        style={{ minHeight: '52px' }}
                     >
                         0
                     </button>
                     <button
                         onClick={handleDecimal}
                         disabled={isLoading}
-                        className="h-14 rounded-full bg-gray-200 text-gray-700 text-xl font-medium hover:bg-gray-300 transition-all active:scale-95"
+                        className="aspect-square rounded-full bg-gray-200 text-gray-700 text-lg sm:text-xl font-medium hover:bg-gray-300 active:bg-gray-300 transition-all active:scale-95 touch-manipulation"
+                        style={{ minHeight: '52px' }}
                     >
                         .
                     </button>
                     <button
                         onClick={handleClear}
                         disabled={isLoading}
-                        className="h-14 rounded-full bg-gray-200 text-gray-500 text-lg font-medium hover:bg-gray-300 transition-all active:scale-95"
+                        className="aspect-square rounded-full bg-gray-200 text-gray-500 text-base sm:text-lg font-medium hover:bg-gray-300 active:bg-gray-300 transition-all active:scale-95 touch-manipulation"
+                        style={{ minHeight: '52px' }}
                     >
                         AC
                     </button>
@@ -264,6 +282,13 @@ export default function PinLogin({ onSuccess }) {
                 }
                 .animate-shake {
                     animation: shake 0.5s ease-in-out;
+                }
+                /* iOS Safari touch optimization */
+                button {
+                    -webkit-tap-highlight-color: transparent;
+                    -webkit-touch-callout: none;
+                    -webkit-user-select: none;
+                    user-select: none;
                 }
             `}</style>
         </div>,
