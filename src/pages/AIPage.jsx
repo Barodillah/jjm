@@ -80,13 +80,14 @@ export default function AIPage() {
     }, [messages]);
 
     // Send message to AI API
-    const handleSend = async () => {
-        if (!inputValue.trim() || isTyping) return;
+    const handleSend = async (text = null) => {
+        const messageText = text || inputValue.trim();
+        if (!messageText || isTyping) return;
 
         const userMessage = {
             id: Date.now(),
             type: 'user',
-            text: inputValue.trim()
+            text: messageText
         };
         setMessages(prev => [...prev, userMessage]);
         setInputValue('');
@@ -99,6 +100,11 @@ export default function AIPage() {
             // API chat.js returns { response: "..." }
             // API chat.php (if exists) might return { message: "..." }
             const replyText = response.response || response.message;
+
+            // Check if there is debug info from backend
+            if (response.debug) {
+                console.warn('⚠️ Backend Debug Info:', response.debug);
+            }
 
             if (!replyText) {
                 console.error('❌ Invalid response format:', response);
@@ -226,7 +232,7 @@ export default function AIPage() {
                         {QUICK_QUESTIONS.map((q, idx) => (
                             <button
                                 key={idx}
-                                onClick={() => setInputValue(q)}
+                                onClick={() => handleSend(q)}
                                 disabled={isTyping}
                                 className="whitespace-nowrap px-4 py-2 bg-indigo-50 text-indigo-600 rounded-full text-xs font-semibold hover:bg-indigo-100 transition-colors disabled:opacity-50"
                             >
@@ -248,7 +254,7 @@ export default function AIPage() {
                             className="flex-1 bg-gray-100 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all disabled:opacity-50"
                         />
                         <button
-                            onClick={handleSend}
+                            onClick={() => handleSend()}
                             disabled={!inputValue.trim() || isTyping}
                             className="w-12 h-12 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center text-white disabled:opacity-50 hover:scale-105 active:scale-95 transition-all"
                         >

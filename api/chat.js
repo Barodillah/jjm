@@ -82,7 +82,13 @@ Berikan saran yang relevan berdasarkan data di atas. Jawab dengan singkat, padat
                 ['assistant', aiMessage]
             );
 
-            return res.status(200).json({ response: aiMessage });
+            // Return response with debug info if sending default error message
+            const responseData = { response: aiMessage };
+            if (aiMessage === 'Maaf, terjadi kesalahan.') {
+                responseData.debug = aiResponse;
+            }
+
+            return res.status(200).json(responseData);
         }
 
         if (req.method === 'DELETE') {
