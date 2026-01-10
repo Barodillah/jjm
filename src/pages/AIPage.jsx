@@ -137,7 +137,7 @@ export default function AIPage() {
     return (
         <div className="min-h-screen bg-gradient-to-b from-indigo-600 to-purple-700 flex flex-col">
             {/* Header */}
-            <div className="sticky top-0 z-10 p-4 flex items-center gap-4 bg-gradient-to-r from-indigo-600 to-purple-700">
+            <div className="sticky top-0 z-10 pt-safe-area p-4 flex items-center gap-4 bg-gradient-to-r from-indigo-600 to-purple-700">
                 <button
                     onClick={() => navigate(-1)}
                     className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-white hover:bg-white/30 transition-colors"
@@ -202,7 +202,7 @@ export default function AIPage() {
             </div>
 
             {/* Input Area */}
-            <div className="bg-white p-4 border-t border-gray-100">
+            <div className="sticky bottom-0 z-10 bg-white p-4 pb-safe-area border-t border-gray-100">
                 <div className="flex items-center gap-3">
                     <input
                         type="text"
