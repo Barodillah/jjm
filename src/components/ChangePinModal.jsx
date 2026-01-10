@@ -40,7 +40,7 @@ export default function ChangePinModal({ isOpen, onClose }) {
         setIsLoading(true);
 
         try {
-            const res = await fetch('/api/auth.php', {
+            const res = await fetch('/api/auth', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ currentPin, newPin })

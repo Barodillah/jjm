@@ -86,7 +86,7 @@ export default function PinLogin({ onSuccess }) {
         setIsLoading(true);
 
         try {
-            const res = await fetch('/api/auth.php', {
+            const res = await fetch('/api/auth', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ pin })
@@ -184,8 +184,8 @@ export default function PinLogin({ onSuccess }) {
                             onClick={() => handleOperator(op)}
                             disabled={isLoading}
                             className={`aspect-square rounded-full text-lg sm:text-xl font-medium transition-all active:scale-95 touch-manipulation ${operator === op && waitingForOperand
-                                    ? 'bg-gray-400 text-white'
-                                    : 'bg-gray-200 text-gray-600 hover:bg-gray-300 active:bg-gray-300'
+                                ? 'bg-gray-400 text-white'
+                                : 'bg-gray-200 text-gray-600 hover:bg-gray-300 active:bg-gray-300'
                                 }`}
                             style={{ minHeight: '52px' }}
                         >
