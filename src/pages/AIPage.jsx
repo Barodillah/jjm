@@ -102,7 +102,7 @@ export default function AIPage() {
 
             // API chat.js returns { response: "..." }
             // API chat.php (if exists) might return { message: "..." }
-            const replyText = response.response || response.message;
+            let replyText = response.response || response.message;
 
             // Check if there is debug info from backend
             if (response.debug) {
