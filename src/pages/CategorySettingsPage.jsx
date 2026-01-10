@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Plus, Trash2, Edit2, X, Check, Palette, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import toast from 'react-hot-toast';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { useApp } from '../context/AppContext';
 
 const PRESET_COLORS = [
@@ -24,13 +26,14 @@ export default function CategorySettingsPage() {
         if (!newName.trim()) return;
         try {
             await addCategory(newName.trim(), newColor, newType);
+            toast.success('Kategori berhasil ditambahkan');
             setNewName('');
             setNewColor(PRESET_COLORS[0]);
             setNewType('expense');
             setIsAdding(false);
         } catch (err) {
             console.error('Failed to add category:', err);
-            alert('Gagal menambah kategori. Coba lagi.');
+            toast.error('Gagal menambah kategori. Coba lagi.');
         }
     };
 
@@ -45,20 +48,23 @@ export default function CategorySettingsPage() {
         if (!editName.trim()) return;
         try {
             await updateCategory(editingId, editName.trim(), editColor, editType);
+            toast.success('Kategori berhasil diperbarui');
             setEditingId(null);
         } catch (err) {
             console.error('Failed to update category:', err);
-            alert('Gagal mengupdate kategori. Coba lagi.');
+            toast.error('Gagal mengupdate kategori. Coba lagi.');
         }
     };
 
-    const handleDelete = async (id) => {
+    const handleDelete = async () => {
+        if (!showDeleteConfirm) return;
         try {
-            await deleteCategory(id);
+            await deleteCategory(showDeleteConfirm);
+            toast.success('Kategori berhasil dihapus');
             setShowDeleteConfirm(null);
         } catch (err) {
             console.error('Failed to delete category:', err);
-            alert('Gagal menghapus kategori. Coba lagi.');
+            toast.error('Gagal menghapus kategori. Coba lagi.');
         }
     };
 
@@ -204,27 +210,6 @@ export default function CategorySettingsPage() {
                                     </button>
                                 </div>
                             </div>
-                        ) : showDeleteConfirm === cat.id ? (
-                            // Delete Confirmation
-                            <div className="space-y-3">
-                                <p className="text-sm text-gray-600">
-                                    Hapus kategori <span className="font-bold">"{cat.name}"</span>?
-                                </p>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => setShowDeleteConfirm(null)}
-                                        className="flex-1 py-2 bg-gray-100 text-gray-600 rounded-xl font-bold text-sm"
-                                    >
-                                        Batal
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(cat.id)}
-                                        className="flex-1 py-2 bg-rose-500 text-white rounded-xl font-bold text-sm"
-                                    >
-                                        Hapus
-                                    </button>
-                                </div>
-                            </div>
                         ) : (
                             // Normal View
                             <div className="flex items-center justify-between">
@@ -274,6 +259,16 @@ export default function CategorySettingsPage() {
                     <p className="text-sm text-gray-300">Klik tombol "Tambah" untuk membuat kategori baru</p>
                 </div>
             )}
+
+            <ConfirmDialog
+                isOpen={!!showDeleteConfirm}
+                onClose={() => setShowDeleteConfirm(null)}
+                onConfirm={handleDelete}
+                title="Hapus Kategori?"
+                message="Kategori yang dihapus tidak dapat dikembalikan. Apakah Anda yakin?"
+                confirmText="Hapus"
+                isDestructive={true}
+            />
         </div>
     );
 }

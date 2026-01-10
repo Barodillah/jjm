@@ -4,6 +4,8 @@ import { ArrowLeft, Sparkles, Send, TrendingUp, TrendingDown, User, Trash2 } fro
 import { useApp } from '../context/AppContext';
 import { formatCurrency } from '../utils/formatters';
 import { chatApi } from '../services/api';
+import toast from 'react-hot-toast';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function AIPage() {
     const navigate = useNavigate();
@@ -11,6 +13,7 @@ export default function AIPage() {
     const [messages, setMessages] = useState([]);
     const [inputValue, setInputValue] = useState('');
     const [isTyping, setIsTyping] = useState(false);
+    const [showClearConfirm, setShowClearConfirm] = useState(false);
     const messagesEndRef = useRef(null);
 
     const QUICK_QUESTIONS = [
@@ -104,6 +107,14 @@ export default function AIPage() {
             // Check if there is debug info from backend
             if (response.debug) {
                 console.warn('⚠️ Backend Debug Info:', response.debug);
+                const debugMsg = typeof response.debug === 'string'
+                    ? response.debug
+                    : JSON.stringify(response.debug, null, 2);
+
+                // Append debug info to the generic message if needed
+                if (replyText.startsWith('Maaf')) {
+                    replyText += `\n\n🔍 Debug Info:\n${debugMsg}`;
+                }
             }
 
             if (!replyText) {
@@ -145,8 +156,11 @@ export default function AIPage() {
                 type: 'ai',
                 text: 'Chat dibersihkan! 🧹 Ada yang bisa saya bantu?'
             }]);
+            toast.success('Riwayat chat berhasil dibersihkan');
+            setShowClearConfirm(false);
         } catch (error) {
             console.error('Failed to clear chat:', error);
+            toast.error('Gagal membersihkan chat');
         }
     };
 
@@ -170,7 +184,7 @@ export default function AIPage() {
                     </div>
                 </div>
                 <button
-                    onClick={handleClearChat}
+                    onClick={() => setShowClearConfirm(true)}
                     className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-white hover:bg-white/30 transition-colors"
                     title="Clear chat"
                 >
@@ -263,6 +277,15 @@ export default function AIPage() {
                     </div>
                 </div>
             </div>
+            <ConfirmDialog
+                isOpen={showClearConfirm}
+                onClose={() => setShowClearConfirm(false)}
+                onConfirm={handleClearChat}
+                title="Bersihkan Chat?"
+                message="Riwayat percakapan akan dihapus dan tidak dapat dikembalikan."
+                confirmText="Bersihkan"
+                isDestructive={true}
+            />
         </div>
     );
 }

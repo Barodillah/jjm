@@ -23,7 +23,7 @@ async function callOpenRouter(systemPrompt, userMessage) {
             'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
             'Content-Type': 'application/json',
             'HTTP-Referer': 'https://jejemoney.vercel.app',
-            'X-Title': 'JJM Finance'
+            'X-Title': 'JJM - Jurnal Jeje Money'
         },
         body: JSON.stringify({
             model: AI_MODEL,
@@ -74,7 +74,28 @@ Berikan saran yang relevan berdasarkan data di atas. Jawab dengan singkat, padat
 
             // Call OpenRouter
             const aiResponse = await callOpenRouter(systemPrompt, message);
-            const aiMessage = aiResponse.choices?.[0]?.message?.content || 'Maaf, terjadi kesalahan.';
+
+            // Check for OpenRouter specific errors
+            if (aiResponse.error) {
+                console.error('OpenRouter Error:', aiResponse.error);
+                await conn.execute(
+                    'INSERT INTO chat_messages (role, content) VALUES (?, ?)',
+                    ['assistant', `Error: ${aiResponse.error.message}`]
+                );
+                return res.status(200).json({
+                    response: 'Maaf, ada kendala pada sistem AI.',
+                    debug: aiResponse.error
+                });
+            }
+
+            const aiMessage = aiResponse.choices?.[0]?.message?.content;
+
+            if (!aiMessage) {
+                return res.status(200).json({
+                    response: 'Maaf, tidak ada respon dari AI.',
+                    debug: aiResponse
+                });
+            }
 
             // Save AI response
             await conn.execute(
@@ -82,13 +103,7 @@ Berikan saran yang relevan berdasarkan data di atas. Jawab dengan singkat, padat
                 ['assistant', aiMessage]
             );
 
-            // Return response with debug info if sending default error message
-            const responseData = { response: aiMessage };
-            if (aiMessage === 'Maaf, terjadi kesalahan.') {
-                responseData.debug = aiResponse;
-            }
-
-            return res.status(200).json(responseData);
+            return res.status(200).json({ response: aiMessage });
         }
 
         if (req.method === 'DELETE') {

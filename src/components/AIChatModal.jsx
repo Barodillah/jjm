@@ -112,7 +112,7 @@ export default function AIChatModal({ isOpen, onClose }) {
                             </div>
                             <div>
                                 <h3 className="font-bold text-lg">AI Financial Assistant</h3>
-                                <p className="text-xs text-indigo-100">Powered by JJMM AI</p>
+                                <p className="text-xs text-indigo-100">Powered by MIMO AI</p>
                             </div>
                         </div>
                         <button

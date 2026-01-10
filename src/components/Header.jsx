@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, X, TrendingUp, TrendingDown } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { formatCurrency } from '../utils/formatters';
+import { formatCurrency, formatDate } from '../utils/formatters';
 import EditTransactionModal from './EditTransactionModal';
 import ChangePinModal from './ChangePinModal';
 
@@ -107,7 +107,7 @@ export default function Header() {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="font-semibold text-gray-800 text-sm truncate">{tx.title}</p>
-                                            <p className="text-xs text-gray-400">{tx.category} • {tx.date}</p>
+                                            <p className="text-xs text-gray-400">{tx.category} • {formatDate(tx.date)}</p>
                                         </div>
                                         <div className="text-right">
                                             <p className={`font-bold text-sm ${tx.type === 'income' ? 'text-emerald-500' : 'text-rose-500'}`}>

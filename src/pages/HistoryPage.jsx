@@ -4,12 +4,23 @@ import { useApp } from '../context/AppContext';
 import BalanceCard from '../components/BalanceCard';
 import TransactionItem from '../components/TransactionItem';
 import EditTransactionModal from '../components/EditTransactionModal';
+import ConfirmDialog from '../components/ConfirmDialog';
+import toast from 'react-hot-toast';
 import DateInput from '../components/DateInput';
 
 export default function HistoryPage() {
     const { transactions, deleteTransaction, categories, catColors } = useApp();
     const [editingTransaction, setEditingTransaction] = useState(null);
+    const [transactionToDelete, setTransactionToDelete] = useState(null);
     const [showFilters, setShowFilters] = useState(false);
+
+    const handleDelete = async () => {
+        if (transactionToDelete) {
+            await deleteTransaction(transactionToDelete);
+            toast.success('Transaksi berhasil dihapus');
+            setTransactionToDelete(null);
+        }
+    };
 
     // Filter states
     const [dateFilter, setDateFilter] = useState('all'); // 'week' | 'month' | 'year' | 'all' | 'custom'
@@ -345,7 +356,7 @@ export default function HistoryPage() {
                         <TransactionItem
                             key={tx.id}
                             tx={tx}
-                            onDelete={() => deleteTransaction(tx.id)}
+                            onDelete={() => setTransactionToDelete(tx.id)}
                             onEdit={(tx) => setEditingTransaction(tx)}
                         />
                     ))
@@ -372,6 +383,16 @@ export default function HistoryPage() {
                 isOpen={!!editingTransaction}
                 onClose={() => setEditingTransaction(null)}
                 transaction={editingTransaction}
+            />
+
+            <ConfirmDialog
+                isOpen={!!transactionToDelete}
+                onClose={() => setTransactionToDelete(null)}
+                onConfirm={handleDelete}
+                title="Hapus Transaksi?"
+                message="Transaksi yang dihapus tidak dapat dikembalikan. Apakah Anda yakin?"
+                confirmText="Hapus"
+                isDestructive={true}
             />
         </div>
     );

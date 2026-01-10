@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { X } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useApp } from '../context/AppContext';
 import { formatCurrency } from '../utils/formatters';
 
@@ -56,12 +57,13 @@ export default function TransactionModal({ isOpen, onClose }) {
                 type,
                 date: new Date().toISOString().split('T')[0]
             });
+            toast.success('Transaksi berhasil disimpan');
             setDisplay('0');
             setTitle('');
             onClose();
         } catch (err) {
             console.error('Failed to save transaction:', err);
-            alert('Gagal menyimpan transaksi. Coba lagi.');
+            toast.error('Gagal menyimpan transaksi. Coba lagi.');
         }
     };
 

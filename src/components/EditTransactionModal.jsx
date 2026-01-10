@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useApp } from '../context/AppContext';
 import { formatCurrency } from '../utils/formatters';
 import DateInput from './DateInput';
@@ -68,10 +69,11 @@ export default function EditTransactionModal({ isOpen, onClose, transaction }) {
                 type,
                 date
             });
+            toast.success('Transaksi berhasil diperbarui');
             onClose();
         } catch (err) {
             console.error('Failed to update transaction:', err);
-            alert('Gagal mengupdate transaksi. Coba lagi.');
+            toast.error('Gagal mengupdate transaksi. Coba lagi.');
         }
     };
 

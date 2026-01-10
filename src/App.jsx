@@ -11,6 +11,7 @@ import HistoryPage from './pages/HistoryPage';
 import AnalysisPage from './pages/AnalysisPage';
 import CategorySettingsPage from './pages/CategorySettingsPage';
 import AIPage from './pages/AIPage';
+import { Toaster } from 'react-hot-toast';
 
 export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -67,6 +68,7 @@ export default function App() {
 
       <BottomNav />
       <TransactionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <Toaster position="top-center" reverseOrder={false} />
     </div>
   );
 }
