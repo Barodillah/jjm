@@ -8,6 +8,7 @@ export default function AnalysisPage() {
     const { transactions, catColors } = useApp();
     const [activeTab, setActiveTab] = useState('expense');
     const [hoveredSegment, setHoveredSegment] = useState(null);
+    const [selectedCategory, setSelectedCategory] = useState(null);
     const [dateFilter, setDateFilter] = useState('month'); // 'week' | 'month' | 'year' | 'all' | 'custom'
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [customRange, setCustomRange] = useState({ start: '', end: '' });
@@ -128,6 +129,29 @@ export default function AnalysisPage() {
     };
 
     const hoveredItem = sortedData.find(d => d.name === hoveredSegment);
+
+    // Get transactions for selected/hovered category
+    const categoryTransactions = useMemo(() => {
+        const categoryName = selectedCategory || hoveredSegment;
+        if (!categoryName) return [];
+
+        const type = activeTab === 'expense' ? 'expense' : 'income';
+        const categoryTxs = filteredTransactions.filter(
+            t => t.type === type && t.category === categoryName
+        );
+
+        const categoryTotal = categoryTxs.reduce((acc, curr) => acc + curr.amount, 0);
+
+        return categoryTxs
+            .map(tx => ({
+                ...tx,
+                percentOfCategory: categoryTotal > 0 ? (tx.amount / categoryTotal) * 100 : 0
+            }))
+            .sort((a, b) => b.amount - a.amount);
+    }, [filteredTransactions, activeTab, selectedCategory, hoveredSegment]);
+
+    const activeCategoryName = selectedCategory || hoveredSegment;
+    const activeCategoryData = sortedData.find(d => d.name === activeCategoryName);
 
     const quickFilters = [
         { key: 'week', label: 'Minggu Ini' },
@@ -253,7 +277,7 @@ export default function AnalysisPage() {
             {/* Tab Switcher */}
             <div className="flex bg-gray-100 p-1 rounded-xl">
                 <button
-                    onClick={() => { setActiveTab('expense'); setHoveredSegment(null); }}
+                    onClick={() => { setActiveTab('expense'); setHoveredSegment(null); setSelectedCategory(null); }}
                     className={`flex-1 py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all ${activeTab === 'expense' ? 'bg-white text-rose-600 shadow-sm' : 'text-gray-500'
                         }`}
                 >
@@ -261,7 +285,7 @@ export default function AnalysisPage() {
                     Pengeluaran
                 </button>
                 <button
-                    onClick={() => { setActiveTab('income'); setHoveredSegment(null); }}
+                    onClick={() => { setActiveTab('income'); setHoveredSegment(null); setSelectedCategory(null); }}
                     className={`flex-1 py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all ${activeTab === 'income' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-500'
                         }`}
                 >
@@ -349,15 +373,18 @@ export default function AnalysisPage() {
                     {sortedData.map(item => (
                         <div
                             key={item.name}
-                            className={`flex items-center gap-3 p-2 rounded-xl transition-all duration-200 cursor-pointer ${hoveredSegment === item.name
-                                ? 'bg-gray-50 scale-[1.02] shadow-sm'
-                                : hoveredSegment ? 'opacity-50' : 'hover:bg-gray-50'
+                            className={`flex items-center gap-3 p-2 rounded-xl transition-all duration-200 cursor-pointer ${selectedCategory === item.name
+                                ? `ring-2 ${activeTab === 'expense' ? 'ring-rose-400 bg-rose-50' : 'ring-emerald-400 bg-emerald-50'} scale-[1.02] shadow-sm`
+                                : hoveredSegment === item.name
+                                    ? 'bg-gray-50 scale-[1.02] shadow-sm'
+                                    : (hoveredSegment || selectedCategory) ? 'opacity-50' : 'hover:bg-gray-50'
                                 }`}
                             onMouseEnter={() => setHoveredSegment(item.name)}
                             onMouseLeave={() => setHoveredSegment(null)}
+                            onClick={() => setSelectedCategory(prev => prev === item.name ? null : item.name)}
                         >
                             <div
-                                className={`w-4 h-4 rounded-full transition-transform duration-200 ${hoveredSegment === item.name ? 'scale-125' : ''}`}
+                                className={`w-4 h-4 rounded-full transition-transform duration-200 ${(hoveredSegment === item.name || selectedCategory === item.name) ? 'scale-125' : ''}`}
                                 style={{ backgroundColor: item.color }}
                             />
                             <div className="flex-1 min-w-0">
@@ -372,6 +399,87 @@ export default function AnalysisPage() {
                         </div>
                     ))}
                 </div>
+
+                {/* Category Transaction List */}
+                {(activeCategoryName && categoryTransactions.length > 0) && (
+                    <div className="w-full mt-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                                <div
+                                    className="w-3 h-3 rounded-full"
+                                    style={{ backgroundColor: activeCategoryData?.color }}
+                                />
+                                <p className="text-sm font-bold text-gray-800">
+                                    {activeCategoryName}
+                                </p>
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${activeTab === 'expense'
+                                    ? 'bg-rose-100 text-rose-600'
+                                    : 'bg-emerald-100 text-emerald-600'
+                                    }`}>
+                                    {activeCategoryData?.percent.toFixed(1)}%
+                                </span>
+                            </div>
+                            {selectedCategory && (
+                                <button
+                                    onClick={() => setSelectedCategory(null)}
+                                    className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1"
+                                >
+                                    <X size={14} />
+                                    Tutup
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                            {categoryTransactions.map((tx, index) => (
+                                <div
+                                    key={tx.id || index}
+                                    className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                                >
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-semibold text-gray-700 truncate">
+                                            {tx.description || tx.name || 'Transaksi'}
+                                        </p>
+                                        <p className="text-[10px] text-gray-400">
+                                            {new Date(tx.date).toLocaleDateString('id-ID', {
+                                                day: 'numeric',
+                                                month: 'short',
+                                                year: 'numeric'
+                                            })}
+                                        </p>
+                                    </div>
+                                    <div className="text-right flex-shrink-0 ml-2">
+                                        <p className={`text-xs font-bold ${activeTab === 'expense' ? 'text-rose-600' : 'text-emerald-600'
+                                            }`}>
+                                            {formatCurrency(tx.amount)}
+                                        </p>
+                                        <div className="flex items-center justify-end gap-1">
+                                            <div
+                                                className={`h-1 rounded-full ${activeTab === 'expense' ? 'bg-rose-400' : 'bg-emerald-400'
+                                                    }`}
+                                                style={{ width: `${Math.max(tx.percentOfCategory, 5)}%`, maxWidth: '40px' }}
+                                            />
+                                            <p className={`text-[10px] font-bold ${activeTab === 'expense' ? 'text-rose-500' : 'text-emerald-500'
+                                                }`}>
+                                                {tx.percentOfCategory.toFixed(1)}%
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center">
+                            <p className="text-[10px] text-gray-400">
+                                {categoryTransactions.length} transaksi
+                            </p>
+                            <p className={`text-xs font-bold ${activeTab === 'expense' ? 'text-rose-600' : 'text-emerald-600'
+                                }`}>
+                                Total: {formatCurrency(activeCategoryData?.amount || 0)}
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 {activeData.length === 0 && (
                     <div className="text-center py-8">
