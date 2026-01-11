@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Trash2, Edit2, X, Check, Palette, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import { Plus, Trash2, Edit2, X, Check, Palette, ArrowDownLeft, ArrowUpRight, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useApp } from '../context/AppContext';
@@ -21,9 +21,12 @@ export default function CategorySettingsPage() {
     const [editColor, setEditColor] = useState('');
     const [editType, setEditType] = useState('expense');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+    const [isAddingLoading, setIsAddingLoading] = useState(false);
+    const [isSavingEdit, setIsSavingEdit] = useState(false);
 
     const handleAdd = async () => {
-        if (!newName.trim()) return;
+        if (!newName.trim() || isAddingLoading) return;
+        setIsAddingLoading(true);
         try {
             await addCategory(newName.trim(), newColor, newType);
             toast.success('Kategori berhasil ditambahkan');
@@ -34,6 +37,8 @@ export default function CategorySettingsPage() {
         } catch (err) {
             console.error('Failed to add category:', err);
             toast.error('Gagal menambah kategori. Coba lagi.');
+        } finally {
+            setIsAddingLoading(false);
         }
     };
 
@@ -45,7 +50,8 @@ export default function CategorySettingsPage() {
     };
 
     const handleSaveEdit = async () => {
-        if (!editName.trim()) return;
+        if (!editName.trim() || isSavingEdit) return;
+        setIsSavingEdit(true);
         try {
             await updateCategory(editingId, editName.trim(), editColor, editType);
             toast.success('Kategori berhasil diperbarui');
@@ -53,6 +59,8 @@ export default function CategorySettingsPage() {
         } catch (err) {
             console.error('Failed to update category:', err);
             toast.error('Gagal mengupdate kategori. Coba lagi.');
+        } finally {
+            setIsSavingEdit(false);
         }
     };
 
@@ -149,16 +157,24 @@ export default function CategorySettingsPage() {
                     <div className="flex gap-2">
                         <button
                             onClick={() => setIsAdding(false)}
-                            className="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold"
+                            disabled={isAddingLoading}
+                            className={`flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold ${isAddingLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             Batal
                         </button>
                         <button
                             onClick={handleAdd}
-                            className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold flex items-center justify-center gap-2"
+                            disabled={isAddingLoading}
+                            className={`flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 ${isAddingLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
                         >
-                            <Check size={18} />
-                            Simpan
+                            {isAddingLoading ? (
+                                <Loader2 className="animate-spin" size={18} />
+                            ) : (
+                                <>
+                                    <Check size={18} />
+                                    Simpan
+                                </>
+                            )}
                         </button>
                     </div>
                 </div>
@@ -198,15 +214,21 @@ export default function CategorySettingsPage() {
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => setEditingId(null)}
-                                        className="flex-1 py-2 bg-gray-100 text-gray-600 rounded-xl font-bold text-sm"
+                                        disabled={isSavingEdit}
+                                        className={`flex-1 py-2 bg-gray-100 text-gray-600 rounded-xl font-bold text-sm ${isSavingEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     >
                                         Batal
                                     </button>
                                     <button
                                         onClick={handleSaveEdit}
-                                        className="flex-1 py-2 bg-indigo-600 text-white rounded-xl font-bold text-sm"
+                                        disabled={isSavingEdit}
+                                        className={`flex-1 py-2 bg-indigo-600 text-white rounded-xl font-bold text-sm flex items-center justify-center ${isSavingEdit ? 'opacity-70 cursor-not-allowed' : ''}`}
                                     >
-                                        Simpan
+                                        {isSavingEdit ? (
+                                            <Loader2 className="animate-spin" size={16} />
+                                        ) : (
+                                            'Simpan'
+                                        )}
                                     </button>
                                 </div>
                             </div>

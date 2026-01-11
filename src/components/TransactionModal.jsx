@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { X } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useApp } from '../context/AppContext';
 import { formatCurrency } from '../utils/formatters';
@@ -10,6 +10,7 @@ export default function TransactionModal({ isOpen, onClose }) {
     const [title, setTitle] = useState('');;
     const [type, setType] = useState('expense');
     const [category, setCategory] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
     // Filter categories based on selected type
     const filteredCategories = useMemo(() => {
@@ -48,7 +49,8 @@ export default function TransactionModal({ isOpen, onClose }) {
     const currentTotal = calculateTotal();
 
     const handleSave = async () => {
-        if (currentTotal === 0 || !title || !category) return;
+        if (currentTotal === 0 || !title || !category || isLoading) return;
+        setIsLoading(true);
         try {
             await addTransaction({
                 title,
@@ -64,6 +66,8 @@ export default function TransactionModal({ isOpen, onClose }) {
         } catch (err) {
             console.error('Failed to save transaction:', err);
             toast.error('Gagal menyimpan transaksi. Coba lagi.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -141,14 +145,15 @@ export default function TransactionModal({ isOpen, onClose }) {
                             <button
                                 key={key}
                                 onClick={() => key === 'OK' ? handleSave() : handleNumpad(key.toString())}
+                                disabled={key === 'OK' && isLoading}
                                 className={`h-14 rounded-2xl text-xl font-bold transition-all flex items-center justify-center ${key === 'OK'
-                                    ? 'bg-indigo-600 text-white shadow-lg'
+                                    ? `bg-indigo-600 text-white shadow-lg ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`
                                     : key === '+' || key === 'C' || key === 'DEL'
                                         ? 'bg-indigo-50 text-indigo-600'
                                         : 'bg-gray-100 text-gray-800'
                                     }`}
                             >
-                                {key}
+                                {key === 'OK' && isLoading ? <Loader2 className="animate-spin" size={24} /> : key}
                             </button>
                         ))}
                     </div>

@@ -438,7 +438,7 @@ export default function AnalysisPage() {
                                 >
                                     <div className="flex-1 min-w-0">
                                         <p className="text-xs font-semibold text-gray-700 truncate">
-                                            {tx.description || tx.name || 'Transaksi'}
+                                            {tx.title || 'Transaksi'}
                                         </p>
                                         <p className="text-[10px] text-gray-400">
                                             {new Date(tx.date).toLocaleDateString('id-ID', {

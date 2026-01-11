@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Loader2 } from 'lucide-react';
 
 export default function ConfirmDialog({
     isOpen,
@@ -10,10 +11,30 @@ export default function ConfirmDialog({
     confirmText = 'Ya, Lanjutkan',
     isDestructive = false
 }) {
+    const [isLoading, setIsLoading] = useState(false);
+
     if (!isOpen) return null;
 
+    const handleConfirm = async () => {
+        if (isLoading) return;
+        setIsLoading(true);
+        try {
+            await onConfirm();
+            onClose();
+        } catch (err) {
+            console.error('Confirm action failed:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleClose = () => {
+        if (isLoading) return;
+        onClose();
+    };
+
     return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={onClose}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={handleClose}>
             <div className="bg-white w-full max-w-sm rounded-[24px] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
                 <div className="p-6 text-center space-y-4">
                     <div className={`w-16 h-16 rounded-full mx-auto flex items-center justify-center ${isDestructive ? 'bg-rose-100 text-rose-500' : 'bg-amber-100 text-amber-500'}`}>
@@ -26,20 +47,23 @@ export default function ConfirmDialog({
                 </div>
                 <div className="flex p-4 gap-3 bg-gray-50 border-t border-gray-100">
                     <button
-                        onClick={onClose}
-                        className="flex-1 py-3 px-4 rounded-xl font-bold text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
+                        onClick={handleClose}
+                        disabled={isLoading}
+                        className={`flex-1 py-3 px-4 rounded-xl font-bold text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 transition-colors ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         Batal
                     </button>
                     <button
-                        onClick={() => {
-                            onConfirm();
-                            onClose();
-                        }}
-                        className={`flex-1 py-3 px-4 rounded-xl font-bold text-white shadow-lg transition-transform active:scale-95 ${isDestructive ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-200' : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200'
+                        onClick={handleConfirm}
+                        disabled={isLoading}
+                        className={`flex-1 py-3 px-4 rounded-xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2 ${isLoading ? 'opacity-70 cursor-not-allowed' : 'active:scale-95'} ${isDestructive ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-200' : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200'
                             }`}
                     >
-                        {confirmText}
+                        {isLoading ? (
+                            <Loader2 className="animate-spin" size={20} />
+                        ) : (
+                            confirmText
+                        )}
                     </button>
                 </div>
             </div>
