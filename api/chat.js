@@ -12,6 +12,14 @@ const dbConfig = {
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const AI_MODEL = 'xiaomi/mimo-v2-flash:free';
 
+console.log('API Key configured:', !!OPENROUTER_API_KEY);
+if (OPENROUTER_API_KEY) {
+    console.log('API Key length:', OPENROUTER_API_KEY.length);
+    console.log('API Key start:', OPENROUTER_API_KEY.substring(0, 5));
+} else {
+    console.error('API Key is MISSING from environment variables');
+}
+
 async function getConnection() {
     return mysql.createConnection(dbConfig);
 }
