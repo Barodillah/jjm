@@ -3,15 +3,37 @@ import pool from './db.js';
 
 const router = express.Router();
 
-let isSettingsInitialized = false;
-
-// initSettingsTable removed from top-level execution
+// Ensure settings table exists
+async function ensureSettingsTable() {
+    try {
+        await pool.execute(`
+            CREATE TABLE IF NOT EXISTS settings (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                key_name VARCHAR(50) UNIQUE NOT NULL,
+                value TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        // Insert default PIN if not exists
+        await pool.execute(`
+            INSERT IGNORE INTO settings (key_name, value) VALUES ('user_pin', '1234')
+        `);
+        await pool.execute(`
+            INSERT IGNORE INTO settings (key_name, value) VALUES ('backup_pin', '0000')
+        `);
+        console.log('[Auth] Settings table ready');
+    } catch (error) {
+        console.error('[Auth] Failed to init settings table:', error);
+    }
+}
 
 // Helper to verify PIN
 async function verifyPin(pin) {
     if (!pin) return false;
     try {
         console.log("[Auth] Connecting to DB pool...");
+        // Ensure table exists first
+        await ensureSettingsTable();
         // Test query
         const [rows] = await pool.execute(
             "SELECT value FROM settings WHERE key_name IN ('user_pin', 'backup_pin')"
