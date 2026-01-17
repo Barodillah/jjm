@@ -11,7 +11,10 @@
     ],
     "functions": {
         "api/index.js": {
-            "maxDuration": 10
+            "maxDuration": 30,
+            "memory": 1024
         }
-    }
+    },
+    "buildCommand": "npm run build",
+    "framework": "vite"
 }

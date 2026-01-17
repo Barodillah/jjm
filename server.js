@@ -1,5 +1,9 @@
 import express from 'express';
 import cors from 'cors';
+import authHandler from './api/auth.js';
+import transactionsHandler from './api/transactions.js';
+import categoriesHandler from './api/categories.js';
+import chatHandler from './api/chat.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -8,7 +12,7 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// Static routes that work without dynamic imports
+// Static routes
 app.get('/api/ping', (req, res) => {
   res.json({
     pong: true,
@@ -25,87 +29,35 @@ app.get('/api/ping', (req, res) => {
 app.get('/api/health', async (req, res) => {
   try {
     const getPool = (await import('./api/db.js')).default;
-    const connection = getPool();
-    await connection.execute('SELECT 1');
-    res.json({ status: 'ok', environment: 'vercel-express', db: 'connected' });
+    const pool = getPool();
+    await pool.execute('SELECT 1');
+    res.json({ status: 'ok', db: 'connected' });
   } catch (error) {
-    console.error('Health check db error:', error);
-    res.status(500).json({ status: 'error', environment: 'vercel-express', db: 'disconnected', error: error.message });
+    res.status(500).json({ status: 'error', db: 'disconnected', error: error.message });
   }
 });
+
+// API Routes
+app.use('/api/auth', authHandler);
+app.use('/api/transactions', transactionsHandler);
+app.use('/api/categories', categoriesHandler);
+app.use('/api/chat', chatHandler);
 
 // Global Error Handler
 app.use((err, req, res, next) => {
   console.error('Global Server Error:', err);
   res.status(500).json({
     success: false,
-    error: err.message || 'Internal Server Error',
-    type: 'GlobalErrorHandler'
+    error: err.message || 'Internal Server Error'
   });
 });
 
-// Dynamic routes - loaded on first request
-let routesLoaded = false;
-
-async function loadRoutes() {
-  if (routesLoaded) return;
-
-  try {
-    const authModule = await import('./api/auth.js');
-    app.use('/api/auth', authModule.default);
-    console.log('[Server] Auth route loaded');
-  } catch (e) {
-    console.error('[Server] Auth import error:', e);
-  }
-
-  try {
-    const transactionsModule = await import('./api/transactions.js');
-    app.use('/api/transactions', transactionsModule.default);
-    console.log('[Server] Transactions route loaded');
-  } catch (e) {
-    console.error('[Server] Transactions import error:', e);
-  }
-
-  try {
-    const categoriesModule = await import('./api/categories.js');
-    app.use('/api/categories', categoriesModule.default);
-    console.log('[Server] Categories route loaded');
-  } catch (e) {
-    console.error('[Server] Categories import error:', e);
-  }
-
-  try {
-    const chatModule = await import('./api/chat.js');
-    app.use('/api/chat', chatModule.default);
-    console.log('[Server] Chat route loaded');
-  } catch (e) {
-    console.error('[Server] Chat import error:', e);
-  }
-
-  routesLoaded = true;
-}
-
-// Middleware to ensure routes are loaded before API requests
-app.use('/api', async (req, res, next) => {
-  // Skip for already handled static routes
-  if (req.path === '/ping' || req.path === '/health') {
-    return next();
-  }
-  await loadRoutes();
-  next();
-});
-
-console.log("[Server] App initialized");
-
 export default app;
 
-// Only run server in development
+// Local development server
 import { fileURLToPath } from 'url';
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  // Load routes immediately for local dev
-  loadRoutes().then(() => {
-    app.listen(PORT, () => {
-      console.log(`Server is running on http://localhost:${PORT}`);
-    });
+  app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
   });
 }
