@@ -3,10 +3,14 @@ import pool from './db.js';
 
 const router = express.Router();
 
-async function initSettingsTable() {
+let isSettingsInitialized = false;
+
+async function ensureSettingsTable() {
+    if (isSettingsInitialized) return;
+
+    // Use a fresh connection to ensure we don't block main pool if possible, or just use pool
     const conn = await pool.getConnection();
     try {
-        // Create settings table if not exists
         await conn.execute(`
             CREATE TABLE IF NOT EXISTS settings (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -28,13 +32,22 @@ async function initSettingsTable() {
         if (backupPin[0].cnt === 0) {
             await conn.execute("INSERT INTO settings (key_name, value) VALUES ('backup_pin', '2098')");
         }
+
+        isSettingsInitialized = true;
+    } catch (error) {
+        console.error("Failed to init settings table:", error);
+        // Don't throw here to allow retry next time, but logic downstream might fail
+        throw error;
     } finally {
         conn.release();
     }
 }
 
+// initSettingsTable removed from top-level execution
+
 async function verifyPin(pin) {
     if (!pin) return false;
+    // ensureSettingsTable is called in the route handler, so table should exist
     const [rows] = await pool.execute(
         "SELECT value FROM settings WHERE key_name IN ('user_pin', 'backup_pin')"
     );
@@ -42,12 +55,10 @@ async function verifyPin(pin) {
     return validPins.includes(pin);
 }
 
-// Initialize settings on module load (optional, or call manually)
-initSettingsTable().catch(console.error);
-
 // POST / - Login
 router.post('/', async (req, res) => {
     try {
+        await ensureSettingsTable(); // Ensure table exists
         const { pin } = req.body;
 
         if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) {

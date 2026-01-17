@@ -27,9 +27,26 @@ app.use('/api/transactions', transactionsHandler);
 app.use('/api/categories', categoriesHandler);
 app.use('/api/chat', chatHandler);
 
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error('Global Server Error:', err);
+  res.status(500).json({
+    success: false,
+    error: err.message || 'Internal Server Error',
+    type: 'GlobalErrorHandler'
+  });
+});
+
 // Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', environment: 'local-express' });
+app.get('/api/health', async (req, res) => {
+  try {
+    const connection = await import('./api/db.js').then(m => m.default);
+    await connection.execute('SELECT 1');
+    res.json({ status: 'ok', environment: 'vercel-express', db: 'connected' });
+  } catch (error) {
+    console.error('Health check db error:', error);
+    res.status(500).json({ status: 'error', environment: 'vercel-express', db: 'disconnected', error: error.message });
+  }
 });
 
 export default app;
