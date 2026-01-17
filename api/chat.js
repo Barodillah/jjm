@@ -1,39 +1,40 @@
-// Vercel Serverless Function for AI Chat
-import mysql from 'mysql2/promise';
+import express from 'express';
+import pool from './db.js';
 
-const dbConfig = {
-    host: '153.92.15.23',
-    port: 3306,
-    user: 'u444914729_jjm',
-    password: 'Sagala.4321',
-    database: 'u444914729_jjm'
-};
-
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const router = express.Router();
 const AI_MODEL = 'xiaomi/mimo-v2-flash:free';
 
-async function getConnection() {
-    return mysql.createConnection(dbConfig);
-}
-
 async function callOpenRouter(systemPrompt, userMessage) {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://jejemoney.vercel.app',
-            'X-Title': 'JJM - Jurnal Jeje Money'
-        },
-        body: JSON.stringify({
-            model: AI_MODEL,
-            messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: userMessage }
-            ]
-        })
-    });
-    return response.json();
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    // console.log('Chat Request - Key Length:', apiKey ? apiKey.length : 0);
+
+    try {
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': process.env.API_URL || 'http://localhost:3001',
+                'X-Title': 'JJM - Jurnal Jeje Money'
+            },
+            body: JSON.stringify({
+                model: AI_MODEL,
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userMessage }
+                ]
+            })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            console.error('OpenRouter Error:', data);
+        }
+        return data;
+    } catch (e) {
+        console.error('Fetch Error:', e);
+        return { error: { message: e.message } };
+    }
 }
 
 // Get recent transaction data for context
@@ -86,43 +87,42 @@ async function getTransactionContext(conn) {
     }
 }
 
-export default async function handler(req, res) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
-
-    let conn;
+// GET / - Get chat history
+router.get('/', async (req, res) => {
     try {
-        conn = await getConnection();
+        const [rows] = await pool.execute(
+            'SELECT * FROM chat_messages ORDER BY created_at DESC LIMIT 50'
+        );
+        return res.status(200).json(rows.reverse());
+    } catch (error) {
+        console.error('Chat error:', error);
+        return res.status(500).json({ error: 'Server error: ' + error.message });
+    }
+});
 
-        if (req.method === 'GET') {
-            const [rows] = await conn.execute(
-                'SELECT * FROM chat_messages ORDER BY created_at DESC LIMIT 50'
-            );
-            return res.status(200).json(rows.reverse());
-        }
+// POST / - Send message
+router.post('/', async (req, res) => {
+    try {
+        const { message } = req.body;
 
-        if (req.method === 'POST') {
-            const { message } = req.body;
+        // Save user message
+        await pool.execute(
+            'INSERT INTO chat_messages (role, content) VALUES (?, ?)',
+            ['user', message]
+        );
 
-            // Save user message
-            await conn.execute(
-                'INSERT INTO chat_messages (role, content) VALUES (?, ?)',
-                ['user', message]
-            );
+        // Get transaction context
+        const context = await getTransactionContext(pool);
 
-            // Get transaction context
-            const context = await getTransactionContext(conn);
-
-            const systemPrompt = `Kamu adalah asisten keuangan pribadi bernama JJ untuk **Kanjeng Jihan Mutia**. 
+        const systemPrompt = `Kamu adalah asisten keuangan pribadi bernama JJ untuk **Kanjeng Jihan Mutia**. 
 Selalu panggil user dengan nama "Jeje" dalam percakapan.
 
-Kamu membantu Jeje mengelola keuangan dengan ramah, profesional, dan penuh perhatian.
-Jawab dengan singkat, hangat, dan gunakan emoji. 💕
+Kamu adalah **ahli keuangan** yang berpengalaman. Selain mengelola data keuangan Jeje, kamu juga sangat menguasai topik literasi keuangan, investasi, budgeting, dan ekonomi.
+Tugas utama kamu:
+1. Analisis keuangan Jeje berdasarkan data transaksi pribadinya.
+2. Jawab pertanyaan umum tentang dunia keuangan (tips hemat, investasi, saham, perencanaan keuangan, dll) dengan wawasan luas.
+
+Jawab dengan gaya bahasa santai, hangat, suportif, dan gunakan emoji. 💕
 
 DATA KEUANGAN JEJE BULAN INI:
 ${context ? `
@@ -142,46 +142,52 @@ ${context.recent?.map(t => `- ${t.tanggal}: ${t.title} - Rp ${Number(t.amount).t
 ${context.today?.length ? context.today.map(t => `- ${t.title}: Rp ${Number(t.amount).toLocaleString('id-ID')} (${t.type === 'income' ? '💰' : '💸'})`).join('\n') : 'Belum ada transaksi hari ini'}
 ` : 'Belum ada data keuangan.'}
 
-Berikan jawaban yang relevan dan personal berdasarkan data di atas. Jika Jeje bertanya tentang keuangan, gunakan data yang tersedia.`;
+Panduan Menjawab:
+- Jika pertanyaan Jeje berkaitan dengan data keuangannya, analisis data di atas secara tajam.
+- Jika pertanyaan bersifat umum (misal: "cara investasi?", "apa itu inflasi?"), jawablah sebagai konsultan keuangan profesional tanpa memaksakan koneksi ke data transaksi.
+- Fokuslah hanya pada topik keuangan. Jika ditanya di luar topik keuangan (misal: resep masakan, politik), tolak dengan halus dan arahkan kembali ke keuangan.`;
 
-            // Single AI call with full context
-            const aiResponse = await callOpenRouter(systemPrompt, message);
+        // Single AI call with full context
+        const aiResponse = await callOpenRouter(systemPrompt, message);
 
-            if (aiResponse.error) {
-                console.error('OpenRouter Error:', aiResponse.error);
-                return res.status(200).json({
-                    response: 'Maaf Jeje, ada kendala pada sistem. Coba lagi ya! 🙏'
-                });
-            }
-
-            const aiMessage = aiResponse.choices?.[0]?.message?.content;
-
-            if (!aiMessage) {
-                return res.status(200).json({
-                    response: 'Maaf Jeje, tidak ada respon. Coba lagi ya! 🙏'
-                });
-            }
-
-            // Save AI response
-            await conn.execute(
-                'INSERT INTO chat_messages (role, content) VALUES (?, ?)',
-                ['assistant', aiMessage]
-            );
-
-            return res.status(200).json({ response: aiMessage });
+        if (aiResponse.error) {
+            console.error('OpenRouter Error:', aiResponse.error);
+            return res.status(200).json({
+                response: 'Maaf Jeje, ada kendala pada sistem. Coba lagi ya! 🙏'
+            });
         }
 
-        if (req.method === 'DELETE') {
-            await conn.execute('DELETE FROM chat_messages');
-            return res.status(200).json({ success: true });
+        const aiMessage = aiResponse.choices?.[0]?.message?.content;
+
+        if (!aiMessage) {
+            return res.status(200).json({
+                response: 'Maaf Jeje, tidak ada respon. Coba lagi ya! 🙏'
+            });
         }
 
-        return res.status(405).json({ error: 'Method not allowed' });
+        // Save AI response
+        await pool.execute(
+            'INSERT INTO chat_messages (role, content) VALUES (?, ?)',
+            ['assistant', aiMessage]
+        );
+
+        return res.status(200).json({ response: aiMessage });
 
     } catch (error) {
         console.error('Chat error:', error);
         return res.status(500).json({ error: 'Server error: ' + error.message });
-    } finally {
-        if (conn) await conn.end();
     }
-}
+});
+
+// DELETE / - Clear history
+router.delete('/', async (req, res) => {
+    try {
+        await pool.execute('DELETE FROM chat_messages');
+        return res.status(200).json({ success: true });
+    } catch (error) {
+        console.error('Chat error:', error);
+        return res.status(500).json({ error: 'Server error: ' + error.message });
+    }
+});
+
+export default router;

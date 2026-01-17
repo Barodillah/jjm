@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import BalanceCard from '../components/BalanceCard';
-import TransactionItem from '../components/TransactionItem';
+import TransactionList from '../components/TransactionList';
 import EditTransactionModal from '../components/EditTransactionModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import toast from 'react-hot-toast';
@@ -36,16 +36,11 @@ export default function HomePage() {
                 </button>
             </div>
 
-            <div className="space-y-3">
-                {transactions.slice(0, 5).map((tx) => (
-                    <TransactionItem
-                        key={tx.id}
-                        tx={tx}
-                        onDelete={() => setTransactionToDelete(tx.id)}
-                        onEdit={(tx) => setEditingTransaction(tx)}
-                    />
-                ))}
-            </div>
+            <TransactionList
+                transactions={transactions.slice(0, 5)}
+                onDelete={(id) => setTransactionToDelete(id)}
+                onEdit={(tx) => setEditingTransaction(tx)}
+            />
 
             <EditTransactionModal
                 isOpen={!!editingTransaction}

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Sparkles, Send, TrendingUp, TrendingDown, User, Trash2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { formatCurrency } from '../utils/formatters';
+import { formatMessage } from '../utils/textFormatter';
 import { chatApi } from '../services/api';
 import toast from 'react-hot-toast';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -19,7 +20,7 @@ export default function AIPage() {
     const QUICK_QUESTIONS = [
         "Analisis pengeluaran bulan ini 📊",
         "Apakah keuanganku sehat? 🏥",
-        "Saran berhemat dong 💡",
+        "Pengeluaranku hari ini normal? 💸",
         "Total tabungan saat ini 💰"
     ];
 
@@ -211,7 +212,9 @@ export default function AIPage() {
                                     ? 'bg-indigo-600 text-white rounded-tr-md'
                                     : 'bg-gray-100 text-gray-800 rounded-tl-md'
                                     }`}>
-                                    <p className="text-sm whitespace-pre-line leading-relaxed">{msg.text}</p>
+                                    <div className="text-sm">
+                                        {formatMessage(msg.text)}
+                                    </div>
                                 </div>
                             </div>
                         </div>

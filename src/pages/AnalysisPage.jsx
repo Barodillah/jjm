@@ -1,8 +1,11 @@
 import { useMemo, useState } from 'react';
-import { TrendingUp, ArrowUpRight, ArrowDownLeft, Calendar, ChevronDown, X } from 'lucide-react';
+import { TrendingUp, ArrowUpRight, ArrowDownLeft, Calendar, ChevronDown, X, Download, Copy } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useApp } from '../context/AppContext';
 import { formatCurrency } from '../utils/formatters';
 import DateInput from '../components/DateInput';
+import CalendarHeatmap from '../components/CalendarHeatmap';
+import AnalysisCharts from '../components/AnalysisCharts';
 
 export default function AnalysisPage() {
     const { transactions, catColors } = useApp();
@@ -17,20 +20,35 @@ export default function AnalysisPage() {
     const getDateRange = () => {
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
         switch (dateFilter) {
             case 'week': {
                 const startOfWeek = new Date(today);
-                startOfWeek.setDate(today.getDate() - today.getDay());
-                return { start: startOfWeek, end: now };
+                const day = today.getDay();
+                const diff = day === 0 ? 6 : day - 1; // Start from Monday
+                startOfWeek.setDate(today.getDate() - diff);
+                return { start: startOfWeek, end: endOfDay };
+            }
+            case 'last_week': {
+                const startOfWeek = new Date(today);
+                const day = today.getDay();
+                const diff = day === 0 ? 6 : day - 1;
+                startOfWeek.setDate(today.getDate() - diff - 7); // Monday of last week
+
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(startOfWeek.getDate() + 6); // Sunday of last week
+                endOfWeek.setHours(23, 59, 59, 999);
+
+                return { start: startOfWeek, end: endOfWeek };
             }
             case 'month': {
                 const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-                return { start: startOfMonth, end: now };
+                return { start: startOfMonth, end: endOfDay };
             }
             case 'year': {
                 const startOfYear = new Date(now.getFullYear(), 0, 1);
-                return { start: startOfYear, end: now };
+                return { start: startOfYear, end: endOfDay };
             }
             case 'custom': {
                 return {
@@ -155,6 +173,7 @@ export default function AnalysisPage() {
 
     const quickFilters = [
         { key: 'week', label: 'Minggu Ini' },
+        { key: 'last_week', label: 'Minggu Lalu' },
         { key: 'month', label: 'Bulan Ini' },
         { key: 'year', label: 'Tahun Ini' },
         { key: 'all', label: 'Semua' },
@@ -173,6 +192,59 @@ export default function AnalysisPage() {
         if (customRange.start && customRange.end) {
             setDateFilter('custom');
             setShowDatePicker(false);
+        }
+    };
+
+    const handleExport = () => {
+        if (!activeData || activeData.length === 0) {
+            toast.error('Tidak ada data untuk diexport');
+            return;
+        }
+
+        const headers = ['Kategori', 'Jumlah', 'Persentase'];
+        const csvContent = [
+            headers.join(','),
+            ...activeData.map(item => {
+                // Escape quotes and commas in category name
+                const name = `"${item.name.replace(/"/g, '""')}"`;
+                return `${name},${item.amount},${item.percent.toFixed(2)}%`;
+            })
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const fileName = `Analisis_${activeTab === 'expense' ? 'Pengeluaran' : 'Pemasukan'}_${dateStr}.csv`;
+
+        link.setAttribute('href', url);
+        link.setAttribute('download', fileName);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success('Berhasil export data!');
+    };
+
+    const handleCopy = async () => {
+        if (!activeData || activeData.length === 0) {
+            toast.error('Tidak ada data untuk disalin');
+            return;
+        }
+
+        const headers = ['Kategori', 'Jumlah', 'Persentase'];
+        const tsvContent = [
+            headers.join('\t'),
+            ...activeData.map(item => `${item.name}\t${item.amount}\t${item.percent.toFixed(2)}%`)
+        ].join('\n');
+
+        try {
+            await navigator.clipboard.writeText(tsvContent);
+            toast.success('Data disalin ke clipboard (Format Excel)!');
+        } catch (err) {
+            toast.error('Gagal menyalin data');
+            console.error('Failed to copy text: ', err);
         }
     };
 
@@ -291,6 +363,24 @@ export default function AnalysisPage() {
                 >
                     <ArrowUpRight size={18} />
                     Pemasukan
+                </button>
+            </div>
+
+            {/* Export Actions */}
+            <div className="flex gap-2 justify-end">
+                <button
+                    onClick={handleCopy}
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors"
+                >
+                    <Copy size={14} />
+                    Copy Table
+                </button>
+                <button
+                    onClick={handleExport}
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-green-600 bg-green-50 hover:bg-green-100 rounded-lg border border-green-200 transition-colors"
+                >
+                    <Download size={14} />
+                    Export Excel
                 </button>
             </div>
 
@@ -511,6 +601,12 @@ export default function AnalysisPage() {
                     </div>
                 </div>
             )}
+
+            {/* Calendar Heatmap Analysis */}
+            <CalendarHeatmap transactions={transactions} />
+
+            {/* Additional Analysis Charts */}
+            <AnalysisCharts transactions={transactions} />
         </div>
     );
 }

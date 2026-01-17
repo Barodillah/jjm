@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { X, Sparkles, TrendingUp, TrendingDown, PieChart, Wallet, Send, MessageCircle, ArrowRight } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { formatCurrency } from '../utils/formatters';
+import { formatMessage } from '../utils/textFormatter';
 
 const QUICK_QUESTIONS = [
     { id: 1, text: 'Total pengeluaran bulan ini?', icon: TrendingDown },
@@ -189,9 +190,9 @@ export default function AIChatModal({ isOpen, onClose }) {
                                     <MessageCircle size={12} className="text-white" />
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
-                                        {getResponse(selectedQuestion.id)}
-                                    </p>
+                                    <div className="text-sm text-gray-700">
+                                        {formatMessage(getResponse(selectedQuestion.id))}
+                                    </div>
                                 </div>
                             </div>
                         </div>

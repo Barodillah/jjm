@@ -2,7 +2,10 @@ import { useState } from 'react';
 import { ArrowUpRight, ArrowDownLeft, Trash2, Edit2 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../utils/formatters';
 
+import { useApp } from '../context/AppContext';
+
 export default function TransactionItem({ tx, onDelete, onEdit }) {
+    const { catColors } = useApp();
     const [isSwiped, setIsSwiped] = useState(false);
 
     return (
@@ -41,8 +44,13 @@ export default function TransactionItem({ tx, onDelete, onEdit }) {
                     {tx.type === 'income' ? <ArrowUpRight size={24} /> : <ArrowDownLeft size={24} />}
                 </div>
                 <div className="flex-1">
-                    <p className="font-bold text-gray-800 leading-tight">{tx.title}</p>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{tx.category} • {formatDate(tx.date)}</p>
+                    <p className="font-bold text-gray-800 leading-tight mb-1 capitalize">{tx.title}</p>
+                    <span
+                        className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full text-white inline-block"
+                        style={{ backgroundColor: catColors[tx.category] || '#9CA3AF' }}
+                    >
+                        {tx.category}
+                    </span>
                 </div>
                 <div className="text-right">
                     <p className={`font-black tracking-tighter ${tx.type === 'income' ? 'text-emerald-600' : 'text-gray-800'}`}>

@@ -4,18 +4,13 @@
  * Auto-detects environment (local PHP vs Vercel serverless)
  */
 
-// Detect if running on Vercel (no .php extension needed)
-const isVercel = typeof window !== 'undefined' &&
-    (window.location.hostname.includes('vercel.app') ||
-        window.location.hostname.includes('.vercel.app'));
+
 
 const API_BASE = '/api';
 
 // Helper to get correct endpoint path
 const getEndpoint = (name) => {
-    // On Vercel, use .js serverless functions
-    // On local, use .php files
-    return isVercel ? `${API_BASE}/${name}` : `${API_BASE}/${name}.php`;
+    return `${API_BASE}/${name}`;
 };
 
 /**

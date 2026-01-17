@@ -1,8 +1,9 @@
+
 import { useState, useMemo } from 'react';
-import { Filter, X, Calendar, ChevronDown, ArrowUpRight, ArrowDownLeft, Check } from 'lucide-react';
+import { Filter, X, Calendar, ChevronDown, ArrowUpRight, ArrowDownLeft, Check, Download, Copy } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import BalanceCard from '../components/BalanceCard';
-import TransactionItem from '../components/TransactionItem';
+import TransactionList from '../components/TransactionList';
 import EditTransactionModal from '../components/EditTransactionModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import toast from 'react-hot-toast';
@@ -120,6 +121,67 @@ export default function HistoryPage() {
     const handleApplyCustomRange = () => {
         if (customRange.start && customRange.end) {
             setDateFilter('custom');
+        }
+    };
+
+    const handleExport = () => {
+        if (!filteredTransactions || filteredTransactions.length === 0) {
+            toast.error('Tidak ada data untuk diexport');
+            return;
+        }
+
+        const headers = ['Tanggal', 'Tipe', 'Kategori', 'Keterangan', 'Jumlah'];
+        const csvContent = [
+            headers.join(','),
+            ...filteredTransactions.map(t => {
+                const d = new Date(t.date);
+                const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                // Escape quotes and commas in strings
+                const category = `"${(t.category || '').replace(/"/g, '""')}"`;
+                const title = `"${(t.title || '').replace(/"/g, '""')}"`;
+                return `${date},${t.type},${category},${title},${t.amount}`;
+            })
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const fileName = `Riwayat_Transaksi_${dateStr}.csv`;
+
+        link.setAttribute('href', url);
+        link.setAttribute('download', fileName);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success('Berhasil export data!');
+    };
+
+    const handleCopy = async () => {
+        if (!filteredTransactions || filteredTransactions.length === 0) {
+            toast.error('Tidak ada data untuk disalin');
+            return;
+        }
+
+        const headers = ['Tanggal', 'Tipe', 'Kategori', 'Keterangan', 'Jumlah'];
+        const tsvContent = [
+            headers.join('\t'),
+            ...filteredTransactions.map(t => {
+                const d = new Date(t.date);
+                const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                return `${date}\t${t.type}\t${t.category || ''}\t${t.title || ''}\t${t.amount}`;
+            })
+        ].join('\n');
+
+        try {
+            await navigator.clipboard.writeText(tsvContent);
+            toast.success('Data disalin ke clipboard (Format Excel)!');
+        } catch (err) {
+            toast.error('Gagal menyalin data');
+            console.error('Failed to copy text: ', err);
         }
     };
 
@@ -342,24 +404,40 @@ export default function HistoryPage() {
                 </div>
             )}
 
-            {/* Results Count */}
+            {/* Results Count and Export Actions */}
             <div className="flex items-center justify-between">
                 <p className="text-xs text-gray-400">
                     Menampilkan <span className="font-bold text-gray-600">{filteredTransactions.length}</span> dari {transactions.length} transaksi
                 </p>
+
+                {filteredTransactions.length > 0 && (
+                    <div className="flex gap-2">
+                        <button
+                            onClick={handleCopy}
+                            className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors"
+                        >
+                            <Copy size={12} />
+                            Copy
+                        </button>
+                        <button
+                            onClick={handleExport}
+                            className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold text-green-600 bg-green-50 hover:bg-green-100 rounded-lg border border-green-200 transition-colors"
+                        >
+                            <Download size={12} />
+                            Excel
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Transaction List */}
             <div className="space-y-3">
                 {filteredTransactions.length > 0 ? (
-                    filteredTransactions.map((tx) => (
-                        <TransactionItem
-                            key={tx.id}
-                            tx={tx}
-                            onDelete={() => setTransactionToDelete(tx.id)}
-                            onEdit={(tx) => setEditingTransaction(tx)}
-                        />
-                    ))
+                    <TransactionList
+                        transactions={filteredTransactions}
+                        onDelete={(id) => setTransactionToDelete(id)}
+                        onEdit={(tx) => setEditingTransaction(tx)}
+                    />
                 ) : (
                     <div className="text-center py-12 bg-white rounded-2xl border border-gray-100">
                         <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
