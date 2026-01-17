@@ -7,6 +7,7 @@ import transactionsHandler from './api/transactions.js';
 import categoriesHandler from './api/categories.js';
 import chatHandler from './api/chat.js';
 import setupHandler from './api/setup.js';
+import debugDbHandler from './api/debug-db.js';
 
 dotenv.config();
 
@@ -28,10 +29,20 @@ app.use('/api/transactions', transactionsHandler);
 app.use('/api/categories', categoriesHandler);
 app.use('/api/chat', chatHandler);
 app.use('/api/setup', setupHandler);
+app.use('/api/debug-db', debugDbHandler);
 
-// Simple Ping (No DB)
+// Simple Ping (No DB) - Show Env Status
 app.get('/api/ping', (req, res) => {
-  res.json({ pong: true, time: new Date().toISOString() });
+  res.json({
+    pong: true,
+    time: new Date().toISOString(),
+    env: {
+      DB_HOST: !!process.env.DB_HOST ? 'Set' : 'Missing',
+      DB_USER: !!process.env.DB_USER ? 'Set' : 'Missing',
+      DB_PASS: !!process.env.DB_PASSWORD ? 'Set' : 'Missing',
+      DB_NAME: !!process.env.DB_NAME ? 'Set' : 'Missing'
+    }
+  });
 });
 
 // Global Error Handler
