@@ -5,46 +5,9 @@ const router = express.Router();
 
 let isSettingsInitialized = false;
 
-async function ensureSettingsTable() {
-    if (isSettingsInitialized) return;
-
-    // Use a fresh connection to ensure we don't block main pool if possible, or just use pool
-    const conn = await pool.getConnection();
-    try {
-        await conn.execute(`
-            CREATE TABLE IF NOT EXISTS settings (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                key_name VARCHAR(50) UNIQUE NOT NULL,
-                value TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-        `);
-
-        // Check and insert default PIN
-        const [userPin] = await conn.execute("SELECT COUNT(*) as cnt FROM settings WHERE key_name = 'user_pin'");
-        if (userPin[0].cnt === 0) {
-            await conn.execute("INSERT INTO settings (key_name, value) VALUES ('user_pin', '4321')");
-        }
-
-        // Check and insert backup PIN
-        const [backupPin] = await conn.execute("SELECT COUNT(*) as cnt FROM settings WHERE key_name = 'backup_pin'");
-        if (backupPin[0].cnt === 0) {
-            await conn.execute("INSERT INTO settings (key_name, value) VALUES ('backup_pin', '2098')");
-        }
-
-        isSettingsInitialized = true;
-    } catch (error) {
-        console.error("Failed to init settings table:", error);
-        // Don't throw here to allow retry next time, but logic downstream might fail
-        throw error;
-    } finally {
-        conn.release();
-    }
-}
-
 // initSettingsTable removed from top-level execution
 
+// Helper to verify PIN
 async function verifyPin(pin) {
     if (!pin) return false;
     // ensureSettingsTable is called in the route handler, so table should exist
@@ -58,7 +21,6 @@ async function verifyPin(pin) {
 // POST / - Login
 router.post('/', async (req, res) => {
     try {
-        await ensureSettingsTable(); // Ensure table exists
         const { pin } = req.body;
 
         if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) {

@@ -6,6 +6,7 @@ import authHandler from './api/auth.js';
 import transactionsHandler from './api/transactions.js';
 import categoriesHandler from './api/categories.js';
 import chatHandler from './api/chat.js';
+import setupHandler from './api/setup.js';
 
 dotenv.config();
 
@@ -26,6 +27,7 @@ app.use('/api/auth', authHandler);
 app.use('/api/transactions', transactionsHandler);
 app.use('/api/categories', categoriesHandler);
 app.use('/api/chat', chatHandler);
+app.use('/api/setup', setupHandler);
 
 // Global Error Handler
 app.use((err, req, res, next) => {
