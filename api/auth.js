@@ -1,4 +1,5 @@
 import express from 'express';
+import getPool from './db.js';
 
 const router = express.Router();
 
@@ -7,21 +8,11 @@ router.get('/', (req, res) => {
     res.json({ status: 'auth router working', time: new Date().toISOString() });
 });
 
-// Lazy load db to avoid module-level crashes
-let pool = null;
-async function getPool() {
-    if (!pool) {
-        const db = await import('./db.js');
-        pool = db.default;
-    }
-    return pool;
-}
-
 // Ensure settings table exists
 async function ensureSettingsTable() {
-    const db = await getPool();
+    const pool = getPool();
     try {
-        await db.execute(`
+        await pool.execute(`
             CREATE TABLE IF NOT EXISTS settings (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 key_name VARCHAR(50) UNIQUE NOT NULL,
@@ -29,9 +20,8 @@ async function ensureSettingsTable() {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
-        await db.execute(`INSERT IGNORE INTO settings (key_name, value) VALUES ('user_pin', '1234')`);
-        await db.execute(`INSERT IGNORE INTO settings (key_name, value) VALUES ('backup_pin', '0000')`);
-        console.log('[Auth] Settings table ready');
+        await pool.execute(`INSERT IGNORE INTO settings (key_name, value) VALUES ('user_pin', '1234')`);
+        await pool.execute(`INSERT IGNORE INTO settings (key_name, value) VALUES ('backup_pin', '0000')`);
     } catch (error) {
         console.error('[Auth] Failed to init settings table:', error);
     }
@@ -40,10 +30,10 @@ async function ensureSettingsTable() {
 // Helper to verify PIN
 async function verifyPin(pin) {
     if (!pin) return false;
-    const db = await getPool();
+    const pool = getPool();
     try {
         await ensureSettingsTable();
-        const [rows] = await db.execute(
+        const [rows] = await pool.execute(
             "SELECT value FROM settings WHERE key_name IN ('user_pin', 'backup_pin')"
         );
         const validPins = rows.map(r => r.value);
@@ -82,7 +72,7 @@ router.post('/', async (req, res) => {
 // PUT / - Change PIN
 router.put('/', async (req, res) => {
     try {
-        const db = await getPool();
+        const pool = getPool();
         const { currentPin, newPin } = req.body;
 
         if (!newPin || newPin.length !== 4 || !/^\d{4}$/.test(newPin)) {
@@ -94,7 +84,7 @@ router.put('/', async (req, res) => {
             return res.status(401).json({ success: false, error: 'PIN saat ini salah' });
         }
 
-        await db.execute("UPDATE settings SET value = ? WHERE key_name = 'user_pin'", [newPin]);
+        await pool.execute("UPDATE settings SET value = ? WHERE key_name = 'user_pin'", [newPin]);
         return res.status(200).json({ success: true, message: 'PIN berhasil diubah' });
 
     } catch (error) {
@@ -104,4 +94,3 @@ router.put('/', async (req, res) => {
 });
 
 export default router;
-

@@ -56,7 +56,8 @@ app.use((err, req, res, next) => {
 // Health check
 app.get('/api/health', async (req, res) => {
   try {
-    const connection = await import('./api/db.js').then(m => m.default);
+    const getPool = (await import('./api/db.js')).default;
+    const connection = getPool();
     await connection.execute('SELECT 1');
     res.json({ status: 'ok', environment: 'vercel-express', db: 'connected' });
   } catch (error) {

@@ -1,12 +1,11 @@
 import express from 'express';
-import pool from './db.js';
+import getPool from './db.js';
 
 const router = express.Router();
 const AI_MODEL = 'xiaomi/mimo-v2-flash:free';
 
 async function callOpenRouter(systemPrompt, userMessage) {
     const apiKey = process.env.OPENROUTER_API_KEY;
-    // console.log('Chat Request - Key Length:', apiKey ? apiKey.length : 0);
 
     try {
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -38,10 +37,9 @@ async function callOpenRouter(systemPrompt, userMessage) {
 }
 
 // Get recent transaction data for context
-async function getTransactionContext(conn) {
+async function getTransactionContext(pool) {
     try {
-        // Get summary stats
-        const [summary] = await conn.execute(`
+        const [summary] = await pool.execute(`
             SELECT 
                 SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as total_income,
                 SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as total_expense,
@@ -50,8 +48,7 @@ async function getTransactionContext(conn) {
             WHERE MONTH(date) = MONTH(CURDATE()) AND YEAR(date) = YEAR(CURDATE())
         `);
 
-        // Get category breakdown
-        const [categories] = await conn.execute(`
+        const [categories] = await pool.execute(`
             SELECT category, type, SUM(amount) as total, COUNT(*) as count
             FROM transactions
             WHERE MONTH(date) = MONTH(CURDATE()) AND YEAR(date) = YEAR(CURDATE())
@@ -60,16 +57,14 @@ async function getTransactionContext(conn) {
             LIMIT 10
         `);
 
-        // Get recent transactions
-        const [recent] = await conn.execute(`
+        const [recent] = await pool.execute(`
             SELECT title, amount, type, category, DATE_FORMAT(date, '%d %b %Y') as tanggal
             FROM transactions
             ORDER BY date DESC, created_at DESC
             LIMIT 10
         `);
 
-        // Get today's transactions
-        const [today] = await conn.execute(`
+        const [today] = await pool.execute(`
             SELECT title, amount, type, category
             FROM transactions
             WHERE DATE(date) = CURDATE()
@@ -90,6 +85,7 @@ async function getTransactionContext(conn) {
 // GET / - Get chat history
 router.get('/', async (req, res) => {
     try {
+        const pool = getPool();
         const [rows] = await pool.execute(
             'SELECT * FROM chat_messages ORDER BY created_at DESC LIMIT 50'
         );
@@ -103,15 +99,14 @@ router.get('/', async (req, res) => {
 // POST / - Send message
 router.post('/', async (req, res) => {
     try {
+        const pool = getPool();
         const { message } = req.body;
 
-        // Save user message
         await pool.execute(
             'INSERT INTO chat_messages (role, content) VALUES (?, ?)',
             ['user', message]
         );
 
-        // Get transaction context
         const context = await getTransactionContext(pool);
 
         const systemPrompt = `Kamu adalah asisten keuangan pribadi bernama JJ untuk **Kanjeng Jihan Mutia**. 
@@ -147,7 +142,6 @@ Panduan Menjawab:
 - Jika pertanyaan bersifat umum (misal: "cara investasi?", "apa itu inflasi?"), jawablah sebagai konsultan keuangan profesional tanpa memaksakan koneksi ke data transaksi.
 - Fokuslah hanya pada topik keuangan. Jika ditanya di luar topik keuangan (misal: resep masakan, politik), tolak dengan halus dan arahkan kembali ke keuangan.`;
 
-        // Single AI call with full context
         const aiResponse = await callOpenRouter(systemPrompt, message);
 
         if (aiResponse.error) {
@@ -165,7 +159,6 @@ Panduan Menjawab:
             });
         }
 
-        // Save AI response
         await pool.execute(
             'INSERT INTO chat_messages (role, content) VALUES (?, ?)',
             ['assistant', aiMessage]
@@ -182,6 +175,7 @@ Panduan Menjawab:
 // DELETE / - Clear history
 router.delete('/', async (req, res) => {
     try {
+        const pool = getPool();
         await pool.execute('DELETE FROM chat_messages');
         return res.status(200).json({ success: true });
     } catch (error) {

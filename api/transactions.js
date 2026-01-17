@@ -1,11 +1,12 @@
 import express from 'express';
-import pool from './db.js';
+import getPool from './db.js';
 
 const router = express.Router();
 
 // GET / - Get all transactions
 router.get('/', async (req, res) => {
     try {
+        const pool = getPool();
         const [rows] = await pool.execute('SELECT * FROM transactions ORDER BY date DESC, id DESC');
         return res.status(200).json(rows);
     } catch (error) {
@@ -17,6 +18,7 @@ router.get('/', async (req, res) => {
 // POST / - Create transaction
 router.post('/', async (req, res) => {
     try {
+        const pool = getPool();
         const { title, amount, category, type, date } = req.body;
         const [result] = await pool.execute(
             'INSERT INTO transactions (title, amount, category, type, date) VALUES (?, ?, ?, ?, ?)',
@@ -32,6 +34,7 @@ router.post('/', async (req, res) => {
 // PUT / - Update transaction
 router.put('/', async (req, res) => {
     try {
+        const pool = getPool();
         const { id } = req.query;
         const { title, amount, category, type, date } = req.body;
         await pool.execute(
@@ -48,6 +51,7 @@ router.put('/', async (req, res) => {
 // DELETE / - Delete transaction
 router.delete('/', async (req, res) => {
     try {
+        const pool = getPool();
         const { id } = req.query;
         await pool.execute('DELETE FROM transactions WHERE id = ?', [id]);
         return res.status(200).json({ success: true });

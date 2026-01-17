@@ -1,11 +1,12 @@
 import express from 'express';
-import pool from './db.js';
+import getPool from './db.js';
 
 const router = express.Router();
 
 // GET / - Get all categories
 router.get('/', async (req, res) => {
     try {
+        const pool = getPool();
         const [rows] = await pool.execute('SELECT * FROM categories ORDER BY name');
         return res.status(200).json(rows);
     } catch (error) {
@@ -17,6 +18,7 @@ router.get('/', async (req, res) => {
 // POST / - Create category
 router.post('/', async (req, res) => {
     try {
+        const pool = getPool();
         const { name, color, type } = req.body;
         const [result] = await pool.execute(
             'INSERT INTO categories (name, color, type) VALUES (?, ?, ?)',
@@ -32,6 +34,7 @@ router.post('/', async (req, res) => {
 // PUT / - Update category
 router.put('/', async (req, res) => {
     try {
+        const pool = getPool();
         const { id } = req.query;
         const { name, color, type } = req.body;
         await pool.execute(
@@ -48,6 +51,7 @@ router.put('/', async (req, res) => {
 // DELETE / - Delete category
 router.delete('/', async (req, res) => {
     try {
+        const pool = getPool();
         const { id } = req.query;
         await pool.execute('DELETE FROM categories WHERE id = ?', [id]);
         return res.status(200).json({ success: true });
