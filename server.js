@@ -18,6 +18,15 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+// Debug Handlers
+console.log('[Server] Checking Handlers:');
+console.log('Auth:', typeof authHandler);
+console.log('Transactions:', typeof transactionsHandler);
+console.log('Categories:', typeof categoriesHandler);
+console.log('Chat:', typeof chatHandler);
+console.log('Setup:', typeof setupHandler);
+console.log('DebugDB:', typeof debugDbHandler);
+
 // Request Adapter for Vercel functions
 // Vercel functions expect (req, res), which Express provides, 
 // but we might need to mock some Vercel-specific properties if used.
