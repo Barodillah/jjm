@@ -10,12 +10,19 @@ let isSettingsInitialized = false;
 // Helper to verify PIN
 async function verifyPin(pin) {
     if (!pin) return false;
-    // ensureSettingsTable is called in the route handler, so table should exist
-    const [rows] = await pool.execute(
-        "SELECT value FROM settings WHERE key_name IN ('user_pin', 'backup_pin')"
-    );
-    const validPins = rows.map(r => r.value);
-    return validPins.includes(pin);
+    try {
+        console.log("[Auth] Connecting to DB pool...");
+        // Test query
+        const [rows] = await pool.execute(
+            "SELECT value FROM settings WHERE key_name IN ('user_pin', 'backup_pin')"
+        );
+        console.log(`[Auth] Query success. Found ${rows.length} rows.`);
+        const validPins = rows.map(r => r.value);
+        return validPins.includes(pin);
+    } catch (error) {
+        console.error("[Auth] verifyPin DB Error:", error);
+        throw error;
+    }
 }
 
 // POST / - Login

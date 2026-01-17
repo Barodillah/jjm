@@ -13,6 +13,37 @@ const getEndpoint = (name) => {
     return `${API_BASE}/${name}`;
 };
 
+// Start Debug Helper
+async function fetchWithLog(url, options = {}) {
+    console.log(`[API] sending request to ${url}`, options);
+    try {
+        const res = await fetch(url, options);
+        console.log(`[API] response status: ${res.status} ${res.statusText}`);
+
+        const text = await res.text();
+        console.log(`[API] raw response body:`, text.substring(0, 500)); // Log first 500 chars
+
+        try {
+            // Try parsing JSON
+            const data = JSON.parse(text);
+            if (!res.ok) {
+                throw new Error(data.error || `Server Error: ${res.status}`);
+            }
+            return data;
+        } catch (jsonErr) {
+            // If JSON parse fails, throw the raw text or original error
+            if (!res.ok) {
+                throw new Error(`Server Error (${res.status}): ${text}`);
+            }
+            throw new Error(`Invalid JSON response: ${text.substring(0, 100)}...`);
+        }
+    } catch (err) {
+        console.error(`[API] Network/Parse Error for ${url}:`, err);
+        throw err;
+    }
+}
+// End Debug Helper
+
 /**
  * Transactions API
  */
@@ -142,20 +173,18 @@ export const runMigration = async () => {
  */
 export const authApi = {
     login: async (pin) => {
-        const res = await fetch(getEndpoint('auth'), {
+        return fetchWithLog(getEndpoint('auth'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ pin })
         });
-        return res.json();
     },
 
     changePin: async (currentPin, newPin) => {
-        const res = await fetch(getEndpoint('auth'), {
+        return fetchWithLog(getEndpoint('auth'), {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ currentPin, newPin })
         });
-        return res.json();
     }
 };
