@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Plus } from 'lucide-react';
 import { useApp } from './context/AppContext';
 import Sidebar from './components/Sidebar';
 import BottomNav from './components/BottomNav';
@@ -59,6 +59,14 @@ export default function App() {
           </div>
         </div>
       </main>
+
+      {/* Add Transaction FAB - Desktop only */}
+      <button
+        onClick={() => setIsModalOpen(true)}
+        className="hidden md:flex fixed bottom-8 right-12 w-14 h-14 bg-indigo-600 text-white rounded-2xl shadow-xl shadow-indigo-300 items-center justify-center z-50 hover:scale-110 active:scale-95 transition-all"
+      >
+        <Plus size={32} />
+      </button>
 
       {/* AI FAB - Right side (Mobile only) */}
       <button
