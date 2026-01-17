@@ -1,11 +1,9 @@
 import mysql from 'mysql2/promise';
 
-// Create pool lazily to avoid issues in serverless cold starts
 let pool = null;
 
-function getPool() {
+export default function getPool() {
     if (!pool) {
-        console.log('[DB] Creating new pool');
         pool = mysql.createPool({
             host: process.env.DB_HOST,
             port: parseInt(process.env.DB_PORT || '3306'),
@@ -15,12 +13,8 @@ function getPool() {
             waitForConnections: true,
             connectionLimit: 5,
             connectTimeout: 10000,
-            ssl: {
-                rejectUnauthorized: false
-            }
+            ssl: { rejectUnauthorized: false }
         });
     }
     return pool;
 }
-
-export default getPool;
