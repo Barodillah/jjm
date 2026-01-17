@@ -50,6 +50,9 @@ router.post('/', async (req, res) => {
         return res.status(500).json({
             success: false,
             error: 'Server error: ' + error.message,
+            code: error.code, // DB Error Code (e.g. PROTOCOL_CONNECTION_LOST)
+            errno: error.errno,
+            sqlMessage: error.sqlMessage,
             stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }

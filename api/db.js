@@ -18,8 +18,13 @@ const pool = mysql.createPool({
     database: process.env.DB_NAME,
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0,
-    connectTimeout: 5000 // Fail within 5s so we can catch the error
+    connectTimeout: 5000, // Fail within 5s
+    // Enable SSL for Vercel/Cloud DBs (Production)
+    ...((process.env.NODE_ENV === 'production' || process.env.DB_SSL === 'true') && {
+        ssl: {
+            rejectUnauthorized: false
+        }
+    })
 });
 
 export default pool;
